@@ -17,3 +17,8 @@ Open the html
 ```
 sevens/web/ws
 ```
+
+
+# demo
+
+![image](https://github.com/wxli3388/sevens/blob/main/demo.gif)
