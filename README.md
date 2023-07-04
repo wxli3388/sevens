@@ -1,8 +1,11 @@
 # sevens
-Simple websocket connections and join/leave a room
+Raw of sevens poker game with websocket
 
 # Todo
-Game logic
+1. Cover card logic
+2. Summarize score after game
+3. Optimize UI
+4. Fix write to close channel issue after user disconnect from websocket
 
 # How to use
 Start go server
