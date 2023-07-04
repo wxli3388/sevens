@@ -73,7 +73,7 @@ func (room *Room) StartGame() {
 	}
 	game := NewGame(room.users, room.maxPlayer)
 	room.game = game
-	// go game.Start()
+	go game.Start() // hack for game start
 }
 
 func (room *Room) JoinRoom(user *User) bool {
@@ -84,6 +84,8 @@ func (room *Room) JoinRoom(user *User) bool {
 		return false
 	}
 	room.users[user] = true
+	user.SetStatus(UserInRoom)
+	// hack for game start
 	if true {
 		room.StartGame()
 	}

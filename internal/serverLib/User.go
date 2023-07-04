@@ -1,6 +1,7 @@
 package serverLib
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -75,7 +76,7 @@ func (user *User) HandleRead() {
 			if user.status != UserInGame {
 				continue
 			}
-			// room := user.server.roomManager.getUserRoom(user)
+			user.gameCmd <- msg
 			continue
 		}
 		res := strings.SplitN(msg, " ", 2)
@@ -90,15 +91,17 @@ func (user *User) HandleRead() {
 			}
 			roomId := ""
 			if len(res) == 2 {
-				roomId = res[1]
+				var cmdJoinRoom CmdInJoinRoom
+				json.Unmarshal([]byte(res[1]), &cmdJoinRoom)
+				roomId = cmdJoinRoom.RoomId
 			}
+
 			res := user.server.roomManager.joinRoom(NewJoinRoomInfo(roomId, user))
 			if res {
-				user.SetStatus(UserInRoom)
 				room := user.server.roomManager.getUserRoom(user)
 				if room != nil {
 					user.UpdateRoomInfo()
-					user.Write(`joinRoom {"roomId": "` + room.roomId + `"}`)
+					user.Write(&CmdOutJoinRoom{room.roomId})
 				}
 			}
 		case "leaveRoom":

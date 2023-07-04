@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"sevens/internal/serverLib"
 	"log"
 	"net/http"
+	"sevens/internal/serverLib"
 
 	"github.com/gorilla/websocket"
 )
@@ -14,7 +14,6 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
-
 
 func serveWebSocket(server *serverLib.Server, w http.ResponseWriter, r *http.Request) {
 	connection, err := upgrader.Upgrade(w, r, nil)
@@ -26,7 +25,6 @@ func serveWebSocket(server *serverLib.Server, w http.ResponseWriter, r *http.Req
 	go user.HandleWrite()
 	go user.HandleRead()
 	server.Register <- user
-	// user.JoinRoom()
 }
 
 func main() {
