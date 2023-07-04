@@ -15,6 +15,7 @@ type User struct {
 	status     int
 	disConnect chan struct{}
 	gameCmd    chan string
+	isAlive    bool
 }
 
 const (
@@ -31,10 +32,14 @@ func NewUser(server *Server, connection *websocket.Conn) *User {
 		status:     0,
 		disConnect: make(chan struct{}),
 		gameCmd:    make(chan string),
+		isAlive:    true,
 	}
 }
 
 func (user *User) Write(message any) {
+	if !user.isAlive {
+		return
+	}
 	user.send <- []byte(fmt.Sprintf("%v", message))
 }
 
@@ -122,13 +127,13 @@ func (user *User) UpdateRoomInfo() {
 }
 
 func (user *User) Disconnect() {
+	user.isAlive = false
 	user.server.Unregister <- user
 	user.server.roomManager.leaveRoom(user)
 	user.disConnect <- struct{}{}
 	user.UpdateRoomInfo()
 	close(user.send)
 	close(user.gameCmd)
-
 }
 
 func (user *User) SetStatus(status int) {

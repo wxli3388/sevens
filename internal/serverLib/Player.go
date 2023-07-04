@@ -2,9 +2,7 @@ package serverLib
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -111,7 +109,6 @@ func (p *Player) GetPosition() int {
 }
 
 func (p *Player) RoundStart() {
-	fmt.Println("current Turn = " + strconv.Itoa(p.game.turn))
 	if p.Card.IsEmpty() {
 		p.game.finish <- struct{}{}
 		return

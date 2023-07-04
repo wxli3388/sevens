@@ -41,19 +41,19 @@
                     <div class="row">
                         <div class="col-12">
                             <div>黑桃</div>
-                            <img v-for="card of data.deskCard[1]" :src="getImage('1'+card)" style="width:80px">
+                            <img v-for="card of data.deskCard[4]" :src="getImage('4'+card)" style="width:80px">
                         </div>
                         <div class="col-12">
                             <div>紅心</div>
-                            <img v-for="card of data.deskCard[2]" :src="getImage('2'+card)" style="width:80px">
-                        </div>
-                        <div class="col-12">
-                            <div>方塊</div>
                             <img v-for="card of data.deskCard[3]" :src="getImage('3'+card)" style="width:80px">
                         </div>
                         <div class="col-12">
+                            <div>方塊</div>
+                            <img v-for="card of data.deskCard[2]" :src="getImage('2'+card)" style="width:80px">
+                        </div>
+                        <div class="col-12">
                             <div>梅花</div>
-                            <img v-for="card of data.deskCard[4]" :src="getImage('4'+card)" style="width:80px">
+                            <img v-for="card of data.deskCard[1]" :src="getImage('1'+card)" style="width:80px">
                         </div>
                         <div class="col-12" style="padding-top: 50px;">
                             <img v-for="card in data.card" :src="getImage(card)" :class="cardCanPlay(card)" style="width:80px" @click="playCard(card)">
