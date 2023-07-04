@@ -1,0 +1,160 @@
+<html>
+    <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    </head>
+    <style>
+        .room-card{
+            border-style: solid;
+            border-width: 1px;
+            padding-bottom: 5px;
+        }
+    </style>
+    
+    <body>
+        <!-- Connect or Disconnect WebSocket Server -->
+        
+        <div id="app">
+            <button @click="connect">Connect</button>
+            <br>
+            <button @click="joinRoom()">joinRoom</button>
+            <button @click="leaveRoom">leaveRoom</button>
+            <!-- <button id="disconnect">Disconnect</button> -->
+
+            <div>
+                Message: <input type="text" v-model="message">
+                <button @click="sendMessage">Send</button>
+            </div>
+
+            <div class="container" style="padding-top: 10px;">
+                <div v-if="!data.inGame" class="row">
+                    <div v-for="room in data.roomInfo" class="col-3 room-card">
+                        <h5 class="card-title">{{room.roomId}}</h5>
+                        <h5 class="card-title">{{room.roomName}}</h5>
+                        <p class="card-text">Current Players: {{room.usersCount}}/{{room.maxPlayer}}</p>
+                        <button class="btn btn-join" :class="room.canJoin? 'btn-primary':'btn-secondary'" @click="joinRoom(room.roomId)">Join Room</button>
+                        <button v-if="room.roomId==data.roomId" class="float-end btn btn-join btn-primary"  @click="leaveRoom(room.roomId)">Leave Room</button>
+                    </div>
+                </div>
+                <div v-else>
+                    <div class="row">
+                        <div class="col-12">
+                            <div>黑桃</div>
+                            <!-- <img v-for="card in data.card" :src="getImage(card)" style="width:80px"> -->
+                        </div>
+                        <div class="col-12">
+                            <div>紅心</div>
+                            <!-- <img v-for="card in data.card" :src="getImage(card)" style="width:80px"> -->
+                        </div>
+                        <div class="col-12">
+                            <div>方塊</div>
+                            <!-- <img v-for="card in data.card" :src="getImage(card)" style="width:80px"> -->
+                        </div>
+                        <div class="col-12">
+                            <div>梅花</div>
+                            <!-- <img v-for="card in data.card" :src="getImage(card)" style="width:80px"> -->
+                        </div>
+                        <div class="col-12">
+                            <img v-for="card in data.card" :src="getImage(card)" style="width:80px">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+  const { createApp, ref } = Vue
+  createApp({
+    data() {
+        return {
+            ws: null,
+            message: '',
+            data: {
+                roomInfo: [],
+                roomId: null,
+                inGame: false,
+                card: []
+            },
+            pingTimer: null,
+            cardMapImge: {"11": "1C", "12": "2C", "13": "3C", "14": "4C", "15": "5C", "16": "6C", "17": "7C", "18": "8C", "19": "9C", "21": "1D", "22": "2D", "23": "3D", "24": "4D", "25": "5D", "26": "6D", "27": "7D", "28": "8D", "29": "9D", "31": "1H", "32": "2H", "33": "3H", "34": "4H", "35": "5H", "36": "6H", "37": "7H", "38": "8H", "39": "9H", "41": "1S", "42": "2S", "43": "3S", "44": "4S", "45": "5S", "46": "6S", "47": "7S", "48": "8S", "49": "9S", "1A": "TC", "2A": "TD", "3A": "TH", "4A": "TS", "1B": "JC", "2B": "JD", "3B": "JH", "4B": "JS", "1C": "QC", "2C": "QD", "3C": "QH", "4C": "QS", "1D": "KC", "2D": "KD", "3D": "KH", "4D": "KS"},
+        }
+    },
+    methods: {
+        connect() {
+            self = this
+            this.ws = new WebSocket('ws://localhost:8080/ws') 
+            this.ws.onopen = () => {
+                console.log('[open connection]')
+                self.sendMessage("connected")
+                // self.pingTimer = setInterval(function() {
+                //     self.sendMessage("ping")
+                // }, 1000);
+                // Listen for messages from Server
+                this.ws.onmessage = event => {
+                    console.log(`[Message from server]:\n %c${event.data}` , 'color: red')
+                    
+                    let cmd = event.data.substring(0, event.data.indexOf(' '));
+                    let data = event.data.substring(event.data.indexOf(' ') + 1);
+                    if(cmd===""){
+                        cmd = event.data
+                    }
+                    switch(cmd) {
+                        case 'roomInfo':
+                            var d = JSON.parse(data)
+                            self.data.roomInfo = d.roomInfo
+                            break
+                        case 'joinRoom':
+                            var d = JSON.parse(data)
+                            self.data.roomId = d.roomId
+                            break
+                        case 'leaveRoom':
+                            var d = JSON.parse(data)
+                            if(d.success){
+                                self.data.roomId = null
+                            }
+                        case 'gameStart':
+                            self.data.inGame = true
+                            break
+                        case 'cardInfo':
+                            var d = JSON.parse(data)
+                            var s = d.card
+                            var arr = s.match(/.{2}/g).sort();
+                            self.data.cardString = s
+                            self.data.card = arr
+                    }
+                }
+            }
+        },
+        sendMessage(message) {
+            if(message){
+                this.ws.send(message)
+            }else{
+                this.ws.send(this.message)
+            }
+            
+        },
+        joinRoom(roomId = '') {
+            if(roomId==''){
+                this.sendMessage(`joinRoom`)
+            }else{
+                this.sendMessage(`joinRoom ${roomId}`)
+            }
+        },
+        leaveRoom() {
+            this.message = "leaveRoom"
+            this.sendMessage()
+        },
+        getImage(card) {
+            return 'img/'+this.cardMapImge[card]+'.svg'
+        }
+    }
+  }).mount('#app')
+</script>
+
+
+
+
