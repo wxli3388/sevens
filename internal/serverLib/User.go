@@ -52,8 +52,8 @@ func (user *User) HandleWrite() {
 			fmt.Println(string(message))
 			// c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 		case <-user.disConnect:
-			fmt.Println("disconnect")
-			close(user.disConnect)
+			// fmt.Println("disconnect")
+			// close(user.disConnect)
 			break
 		}
 	}
@@ -67,7 +67,6 @@ func (user *User) HandleRead() {
 	for {
 		_, message, err := user.connection.ReadMessage()
 		if err != nil {
-			fmt.Println("disconnect")
 			user.Disconnect()
 			break
 		}
