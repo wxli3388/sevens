@@ -1,5 +1,5 @@
 # Raw of sevens poker game with websocket.
-The game is designed to be played with a row of seven players using poker rules. 
+The game is designed to play row of sevens. 
 By default, the game involves three computer players upon joining the game room. However, it can be modified to allow other users to join and play.
 
 # To-Do List
