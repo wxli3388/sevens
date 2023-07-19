@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -52,19 +53,19 @@ func NewGame(userMap map[*User]bool, maxPlayer int) *Game {
 	return game
 }
 
-func (game *Game) Start() {
+func (game *Game) Start(gameSignal chan struct{}) {
 	deck := CreateDeck()
 	deck.ShuffleDeck()
 	deck.DealCards(game.Players)
 	game.RandomPlayer()
 	game.Broadcast("gameStart")
 	game.SendCardStatus()
-	go game.Run()
+	go game.Run(gameSignal)
 
 	go game.Players[game.turn].RoundStart()
 }
 
-func (game *Game) Run() {
+func (game *Game) Run(gameSignal chan struct{}) {
 	run := true
 	for run {
 		select {
@@ -90,10 +91,32 @@ func (game *Game) Run() {
 			}
 
 		case <-game.finish:
+			coverCard := []string{}
+			score := []int{}
+
+			for i := 0; i < game.maxPlayer; i += 1 {
+				card := strings.Join(game.Players[i].Card.Cover, "")
+				coverCard = append(coverCard, card)
+				cnt := 0
+				for j := 0; j < len(game.Players[i].Card.Cover); j += 1 {
+					cnt += game.CardToScore(string(game.Players[i].Card.Cover[j][1]))
+				}
+				score = append(score, cnt)
+			}
+			gameOver := &CmdOutGameOver{
+				CoverCard: coverCard,
+				Score:     score,
+			}
+			game.Broadcast(gameOver)
 			run = false
 			break
 		}
 	}
+	timer := time.NewTimer(3 * time.Second)
+	<-timer.C
+	gameSignal <- struct{}{}
+	game.Broadcast(&CmdOutBackToRoom{})
+
 }
 
 func (game *Game) RandomPlayer() {
@@ -137,4 +160,23 @@ func (game *Game) CheckTurn(turn int) bool {
 	fmt.Println(game.turn, turn)
 	game.mutex.Unlock()
 	return v
+}
+
+func (game *Game) CardToScore(cardSign string) int {
+	h := map[string]int{
+		"1": -1,
+		"2": -2,
+		"3": -3,
+		"4": -4,
+		"5": -5,
+		"6": -6,
+		"7": -7,
+		"8": -8,
+		"9": -9,
+		"A": -10,
+		"B": -11,
+		"C": -12,
+		"D": -13,
+	}
+	return h[cardSign]
 }

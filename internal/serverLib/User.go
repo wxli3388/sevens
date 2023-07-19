@@ -90,6 +90,10 @@ func (user *User) HandleRead() {
 			roomInfo := user.server.roomManager.getAllRoomInfo()
 			cmdRoomInfo := &CmdRoomInfo{RoomInfo: roomInfo}
 			user.Write(cmdRoomInfo)
+		case "roomInfo":
+			roomInfo := user.server.roomManager.getAllRoomInfo()
+			cmdRoomInfo := &CmdRoomInfo{RoomInfo: roomInfo}
+			user.Write(cmdRoomInfo)
 		case "joinRoom":
 			if user.status == UserInRoom {
 				continue
@@ -113,6 +117,9 @@ func (user *User) HandleRead() {
 			user.server.roomManager.leaveRoom(user)
 			user.Write(`leaveRoom {"success": true}`)
 			user.UpdateRoomInfo()
+		case "startGame":
+			room := user.server.roomManager.getUserRoom(user)
+			room.StartGame()
 		default:
 
 		}

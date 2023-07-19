@@ -10,9 +10,11 @@ type JoinRoomInfo struct {
 }
 
 type RoomManager struct {
-	roomMap map[string]*Room
-	userMap map[*User]*Room
-	mutex   sync.RWMutex
+	roomMap           map[string]*Room
+	userMap           map[*User]*Room
+	server            *Server
+	mutex             sync.RWMutex
+	roomManagerSignal chan struct{}
 }
 
 func NewJoinRoomInfo(roomId string, user *User) *JoinRoomInfo {
@@ -24,14 +26,34 @@ func NewJoinRoomInfo(roomId string, user *User) *JoinRoomInfo {
 
 func NewRoomManager() *RoomManager {
 	roomManager := &RoomManager{
-		roomMap: map[string]*Room{},
-		userMap: map[*User]*Room{},
+		roomMap:           map[string]*Room{},
+		userMap:           map[*User]*Room{},
+		roomManagerSignal: make(chan struct{}),
 	}
 	return roomManager
 }
 
+func (roomManager *RoomManager) listen() {
+	for {
+		select {
+		case <-roomManager.roomManagerSignal:
+			roomManager.UpdateRoomInfo()
+		}
+	}
+}
+
+func (roomManager *RoomManager) SetServer(server *Server) {
+	roomManager.server = server
+}
+
+func (roomManager *RoomManager) UpdateRoomInfo() {
+	roomInfo := roomManager.getAllRoomInfo()
+	cmdRoomInfo := &CmdRoomInfo{RoomInfo: roomInfo}
+	roomManager.server.Broadcast(cmdRoomInfo)
+}
+
 func (roomManager *RoomManager) createRoom(roomName string) *Room {
-	room := NewRoom(roomName)
+	room := NewRoom(roomName, roomManager.roomManagerSignal)
 	roomManager.roomMap[room.roomId] = room
 	return room
 }

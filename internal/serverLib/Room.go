@@ -6,13 +6,15 @@ import (
 )
 
 type Room struct {
-	roomName      string
-	roomId        string
-	users         map[*User]bool
-	canChangeUser bool
-	maxPlayer     int
-	mutex         sync.RWMutex
-	game          *Game
+	roomName          string
+	roomId            string
+	users             map[*User]bool
+	maxPlayer         int
+	mutex             sync.RWMutex
+	game              *Game
+	gameStart         bool
+	gameSignal        chan (struct{})
+	roomManagerSignal chan (struct{})
 }
 
 type RoomInfo struct {
@@ -27,16 +29,18 @@ const (
 	MaxPlayer = 4
 )
 
-func NewRoom(roomName string) *Room {
+func NewRoom(roomName string, roomManagerSignal chan struct{}) *Room {
 	if roomName == "" {
 		roomName = "Let's play a game"
 	}
 	return &Room{
-		roomName:      roomName,
-		roomId:        generateRoomId(),
-		users:         make(map[*User]bool),
-		maxPlayer:     MaxPlayer,
-		canChangeUser: true,
+		roomName:          roomName,
+		roomId:            generateRoomId(),
+		users:             make(map[*User]bool),
+		maxPlayer:         MaxPlayer,
+		gameStart:         false,
+		gameSignal:        make(chan struct{}),
+		roomManagerSignal: roomManagerSignal,
 	}
 }
 
@@ -51,29 +55,51 @@ func (room *Room) Broadcast(message string) {
 }
 
 func (room *Room) GetRoomInfo() *RoomInfo {
+	defer room.mutex.Unlock()
+	room.mutex.Lock()
+	canJoin := room.CanJoin()
 	return &RoomInfo{
 		RoomId:     room.roomId,
 		RoomName:   room.roomName,
 		UsersCount: len(room.users),
-		CanJoin:    room.CanJoin(),
+		CanJoin:    canJoin,
 		MaxPlayer:  room.maxPlayer,
 	}
 }
 
 func (room *Room) CanJoin() bool {
-	if len(room.users) < MaxPlayer {
+	if len(room.users) < MaxPlayer && !room.gameStart {
 		return true
 	}
 	return false
 }
 
 func (room *Room) StartGame() {
+	defer room.mutex.Unlock()
+	room.mutex.Lock()
+	if room.gameStart {
+		return
+	}
+
 	for user, _ := range room.users {
 		user.SetStatus(UserInGame)
 	}
 	game := NewGame(room.users, room.maxPlayer)
 	room.game = game
-	go game.Start() // hack for game start
+	room.gameStart = true
+
+	go game.Start(room.gameSignal) // hack for game start
+	go room.listenSignal()
+
+}
+
+func (room *Room) listenSignal() {
+	<-room.gameSignal
+
+	room.mutex.Lock()
+	room.gameStart = false
+	room.mutex.Unlock()
+	<-room.roomManagerSignal
 }
 
 func (room *Room) JoinRoom(user *User) bool {
@@ -86,16 +112,16 @@ func (room *Room) JoinRoom(user *User) bool {
 	room.users[user] = true
 	user.SetStatus(UserInRoom)
 	// hack for game start
-	if true {
-		room.StartGame()
-	}
+	// if true {
+	// 	room.StartGame()
+	// }
 	return true
 }
 
 func (room *Room) LeaveRoom(user *User) bool {
 	room.mutex.Lock()
 	defer room.mutex.Unlock()
-	if !room.canChangeUser {
+	if room.gameStart {
 		return false
 	}
 	if _, ok := room.users[user]; ok {

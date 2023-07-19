@@ -263,9 +263,14 @@ func (p *Player) CoverCard(card string) {
 }
 
 func (p *Player) GetCardCanPlay() []string {
-	canPlay := []string{}
+	defer p.Card.mutex.Unlock()
 	p.Card.mutex.Lock()
 	card := p.Card.GetCard()
+	if _, ok := card["47"]; ok {
+		return []string{"47"}
+	}
+
+	canPlay := []string{}
 	for suit, cardStr := range p.game.GameDeck.card {
 		if cardStr == "" {
 			seven := suit + "7"
@@ -286,7 +291,6 @@ func (p *Player) GetCardCanPlay() []string {
 			}
 		}
 	}
-	p.Card.mutex.Unlock()
 	return canPlay
 }
 

@@ -12,13 +12,16 @@ type Server struct {
 
 func NewServer() *Server {
 	roomManager := NewRoomManager()
-	return &Server{
+	server := &Server{
 		roomManager: roomManager,
 		users:       make(map[*User]bool),
 		Register:    make(chan *User),
 		Unregister:  make(chan *User),
 		Message:     make(chan string),
 	}
+	roomManager.SetServer(server)
+	go roomManager.listen()
+	return server
 }
 
 func (server *Server) Run() {
