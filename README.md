@@ -1,11 +1,14 @@
-# sevens
-Raw of sevens poker game with websocket
+# Raw of sevens poker game with websocket.
+The game is designed to play row of sevens. 
+By default, the game involves three computer players upon joining the game room. However, it can be modified to allow other users to join and play.
 
-# Todo
-1. Cover card logic
-2. Summarize score after game
-3. Optimize UI
-4. Fix write to close channel issue after user disconnect from websocket
+# To-Do List
+1. Implement the card logic for covering cards.
+2. Calculate and summarize the scores at the end of each game.
+3. Enhance the user interface (UI) for better user experience.
+4. Resolve the issue related to writing to a closed channel when a user disconnects from the WebSocket.
+5. Optimize the card comparison logic for improved gameplay.
+
 
 # How to use
 Start go server
