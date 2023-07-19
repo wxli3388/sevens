@@ -69,7 +69,6 @@ func (game *Game) Run() {
 	for run {
 		select {
 		case action := <-game.Action:
-
 			if action.actionCode == GameActionPlay {
 				game.GameDeck.mutex.Lock()
 				data := struct {
@@ -81,12 +80,13 @@ func (game *Game) Run() {
 				}
 				b, _ := json.Marshal(data)
 				game.GameDeck.mutex.Unlock()
+
 				game.Broadcast("playCard " + string(b))
 			} else {
 				game.mutex.Lock()
 				seat := strconv.Itoa(game.turn)
 				game.mutex.Unlock()
-				game.Broadcast("cover by seat " + seat + " card = " + action.card)
+				game.Broadcast("cover by seat " + seat)
 			}
 
 		case <-game.finish:

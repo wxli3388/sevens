@@ -2,6 +2,7 @@ package serverLib
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 )
 
@@ -45,9 +46,11 @@ func (c *Card) String() string {
 		s += k
 	}
 	data := struct {
-		Card string `json:"card"`
+		Card      string `json:"card"`
+		CoverCard string `json:"coverCard"`
 	}{
-		Card: s,
+		Card:      s,
+		CoverCard: strings.Join(c.Cover[:], ""),
 	}
 	b, _ := json.Marshal(data)
 

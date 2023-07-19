@@ -55,8 +55,18 @@
                             <div>梅花</div>
                             <img v-for="card of data.deskCard[1]" :src="getImage('1'+card)" style="width:80px">
                         </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12" v-show="data.yourTurn">
+                            <h1 class="text-danger bg-dark">my turn</h1>
+                            <h1 class="bg-danger text-white" v-show="isCoverCard()">You must cover a card, click card to cover</h1>
+                        </div>
                         <div class="col-12" style="padding-top: 50px;">
                             <img v-for="card in data.card" :src="getImage(card)" :class="cardCanPlay(card)" style="width:80px" @click="playCard(card)">
+                        </div>
+                        <div class="col-12" style="padding-top: 50px;" v-if="data.coverCard.length>0">
+                            <h2>Your cover cards</h2>
+                            <img v-for="card in data.coverCard" :src="getImage(card)" style="width:80px">
                         </div>
                     </div>
                 </div>
@@ -81,13 +91,15 @@
                 roomId: null,
                 inGame: false,
                 card: [],
+                coverCard: [],
                 deskCard: {
                     1: "",
                     2: "",
                     3: "",
                     4: "",
                 },
-                cardHint: {}
+                cardHint: {},
+                yourTurn: false,
             },
             pingTimer: null,
             cardMapImge: {"11": "1C", "12": "2C", "13": "3C", "14": "4C", "15": "5C", "16": "6C", "17": "7C", "18": "8C", "19": "9C", "21": "1D", "22": "2D", "23": "3D", "24": "4D", "25": "5D", "26": "6D", "27": "7D", "28": "8D", "29": "9D", "31": "1H", "32": "2H", "33": "3H", "34": "4H", "35": "5H", "36": "6H", "37": "7H", "38": "8H", "39": "9H", "41": "1S", "42": "2S", "43": "3S", "44": "4S", "45": "5S", "46": "6S", "47": "7S", "48": "8S", "49": "9S", "1A": "TC", "2A": "TD", "3A": "TH", "4A": "TS", "1B": "JC", "2B": "JD", "3B": "JH", "4B": "JS", "1C": "QC", "2C": "QD", "3C": "QH", "4C": "QS", "1D": "KC", "2D": "KD", "3D": "KH", "4D": "KS"},
@@ -137,13 +149,20 @@
                             var d = JSON.parse(data)
                             var s = d.card
                             if(s.length==0){
-                                self.data.cardString = ""
                                 self.data.card = []
-                                break
+                            }else{
+                                var arr = s.match(/.{2}/g).sort();
+                                self.data.card = arr
                             }
-                            var arr = s.match(/.{2}/g).sort();
-                            self.data.cardString = s
-                            self.data.card = arr
+                            
+                            var s = d.coverCard
+                            if(s.length==0){
+                                self.data.coverCard = []
+                            }else{
+                                var arr = s.match(/.{2}/g).sort();
+                                self.data.coverCard = arr
+                            }
+                            
                             break
                         case 'playCard':
                             var d = JSON.parse(data)
@@ -155,7 +174,11 @@
                             for(v of d.card){
                                 self.data.cardHint[v] = true
                             }
-                            
+                            break
+                        case 'yourTurn':
+                            var d = JSON.parse(data)
+                            self.data.yourTurn = d.turn
+                            break
                     }
                 }
             }
@@ -185,15 +208,25 @@
             return 'img/'+this.cardMapImge[card]+'.svg'
         },
         playCard(card){
+            if(this.isCoverCard()){
+                return this.coverCard(card)
+            }
             let s = JSON.stringify({'card':card})
             this.sendMessage(`game_play_card ${s}`)
+        },
+        coverCard(card){
+            let s = JSON.stringify({'card':card})
+            this.sendMessage(`game_cover_card ${s}`)
         },
         cardCanPlay(card) {
             if(card in this.data.cardHint){
                 return "hint-card"
             }
+        },
+        isCoverCard() {
+            return Object.keys(this.data.cardHint).length===0
         }
-    }
+    },
   }).mount('#app')
 </script>
 

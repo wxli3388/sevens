@@ -39,3 +39,15 @@ func (cardHint *CmdOutCardHint) String() string {
 	}
 	return "cardHint " + string(s)
 }
+
+type CmdOutYourTurn struct {
+	Turn bool `json:"turn"`
+}
+
+func (c *CmdOutYourTurn) String() string {
+	s, err := json.Marshal(c)
+	if err != nil {
+		return "yourTurn {}"
+	}
+	return "yourTurn " + string(s)
+}

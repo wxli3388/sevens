@@ -13,7 +13,7 @@ type Player struct {
 	Card       *Card
 	position   int
 	game       *Game
-	gameAction chan string
+	gameAction chan *GameAction
 	endGame    chan struct{}
 }
 
@@ -25,7 +25,7 @@ func NewPlayer(user *User) *Player {
 	player := &Player{
 		isRobot:    isRobot,
 		User:       user,
-		gameAction: make(chan string),
+		gameAction: make(chan *GameAction),
 		endGame:    make(chan struct{}),
 	}
 	if !player.isRobot {
@@ -55,41 +55,87 @@ func (p *Player) ServeCmd() {
 func (p *Player) handleGameCmd(cmd string) {
 	res := strings.SplitN(cmd, " ", 2)
 	switch res[0] {
+	case "game_cover_card":
+		p.cmdGameCoverCard(res[1])
 	case "game_play_card":
-		if !p.game.CheckTurn(p.position) {
-			return // not your turn
-		}
-		var cmdInGamePlayCard CmdInGamePlayCard
-		err := json.Unmarshal([]byte(res[1]), &cmdInGamePlayCard)
-		if err != nil {
-			return
-
-		}
-		playCard := cmdInGamePlayCard.Card
-		if _, ok := p.Card.GetCard()[playCard]; !ok {
-			p.User.Write("Cheater!!")
-			return
-		}
-		valid := false
-		canPlay := p.GetCardCanPlay()
-		for _, v := range canPlay {
-			if v == playCard {
-				valid = true
-			}
-		}
-		if !valid {
-			p.User.Write("invalid card!!")
-			return
-		}
-		timer := time.NewTimer(500 * time.Millisecond) //防呆 應該能快速處理完?
-		select {
-		case p.gameAction <- playCard:
-			break
-		case <-timer.C:
-			break
-		}
-		// p.gameAction <- playCard
+		p.cmdGamePlayCard(res[1])
 	}
+}
+
+func (p *Player) cmdGameCoverCard(data string) {
+	if !p.game.CheckTurn(p.position) {
+		return // not your turn
+	}
+	var cmdInGameCoverCard CmdInGameCoverCard
+	err := json.Unmarshal([]byte(data), &cmdInGameCoverCard)
+	if err != nil {
+		return
+	}
+	playCard := cmdInGameCoverCard.Card
+	if !p.cardCheck(playCard) {
+		return
+	}
+
+	ga := &GameAction{
+		actionCode: GameActionCover,
+		card:       playCard,
+	}
+	timer := time.NewTimer(500 * time.Millisecond) //防呆 應該能快速處理完?
+	select {
+	case p.gameAction <- ga:
+		break
+	case <-timer.C:
+		break
+	}
+}
+
+func (p *Player) cmdGamePlayCard(data string) {
+	if !p.game.CheckTurn(p.position) {
+		return // not your turn
+	}
+	var cmdInGamePlayCard CmdInGamePlayCard
+	err := json.Unmarshal([]byte(data), &cmdInGamePlayCard)
+	if err != nil {
+		return
+	}
+	playCard := cmdInGamePlayCard.Card
+	if !p.cardCheck(playCard) {
+		return
+	}
+
+	valid := false
+	canPlay := p.GetCardCanPlay()
+	for _, v := range canPlay {
+		if v == playCard {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		p.User.Write("You can't play this card!!")
+		return
+	}
+
+	ga := &GameAction{
+		actionCode: GameActionPlay,
+		card:       playCard,
+	}
+	timer := time.NewTimer(500 * time.Millisecond) //防呆 應該能快速處理完?
+	select {
+	case p.gameAction <- ga:
+		break
+	case <-timer.C:
+		break
+	}
+}
+
+func (p *Player) cardCheck(card string) bool {
+
+	if _, ok := p.Card.GetCard()[card]; !ok {
+		p.User.Write("You don't have this card!!")
+		return false
+	}
+	return true
 }
 
 func (p *Player) SetGame(game *Game) {
@@ -123,16 +169,19 @@ func (p *Player) RoundStart() {
 	IntervalTime := HumanAutoPlay * time.Millisecond // 觸發間隔時間
 	ticker := time.NewTicker(IntervalTime)           // 設定 秒觸發一次
 	card := p.GetCardCanPlay()
+	p.User.Write(&CmdOutYourTurn{true})
 	p.User.Write(&CmdOutCardHint{card})
 	run := true
 	for run {
 		select {
-		case card := <-p.gameAction:
-			p.PlayCard(card)
-			p.game.Action <- &GameAction{
-				actionCode: GameActionPlay,
-				card:       card,
+		case gameAction := <-p.gameAction:
+			if gameAction.actionCode == GameActionPlay {
+				p.PlayCard(gameAction.card)
+			} else {
+				p.CoverCard(gameAction.card)
 			}
+
+			p.game.Action <- gameAction
 			p.UpdateUserCard()
 			run = false
 			break
@@ -142,6 +191,7 @@ func (p *Player) RoundStart() {
 			break
 		}
 	}
+	p.User.Write(&CmdOutYourTurn{false})
 	p.turnNextPlayer()
 }
 
@@ -206,6 +256,10 @@ func (p *Player) PlayCard(card string) {
 	}
 	p.game.GameDeck.mutex.Unlock()
 	p.Card.RemoveCard(card)
+}
+
+func (p *Player) CoverCard(card string) {
+	p.Card.CoverCard(card)
 }
 
 func (p *Player) GetCardCanPlay() []string {
