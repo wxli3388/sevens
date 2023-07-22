@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -14,6 +15,7 @@ type User struct {
 	send       chan []byte
 	status     int
 	disConnect chan struct{}
+	mutex      sync.RWMutex
 	gameCmd    chan string
 	isAlive    bool
 }
@@ -78,7 +80,7 @@ func (user *User) HandleRead() {
 		}
 		msg := string(message)
 		if strings.HasPrefix(msg, "game_") {
-			if user.status != UserInGame {
+			if user.GetUserStatus() != UserInGame {
 				continue
 			}
 			user.gameCmd <- msg
@@ -95,7 +97,7 @@ func (user *User) HandleRead() {
 			cmdRoomInfo := &CmdRoomInfo{RoomInfo: roomInfo}
 			user.Write(cmdRoomInfo)
 		case "joinRoom":
-			if user.status == UserInRoom {
+			if user.GetUserStatus() == UserInRoom {
 				continue
 			}
 			roomId := ""
@@ -120,6 +122,8 @@ func (user *User) HandleRead() {
 		case "startGame":
 			room := user.server.roomManager.getUserRoom(user)
 			room.StartGame()
+		case "testing":
+			user.server.roomManager.testing()
 		default:
 		}
 	}
@@ -142,5 +146,13 @@ func (user *User) Disconnect() {
 }
 
 func (user *User) SetStatus(status int) {
+	user.mutex.Lock()
 	user.status = status
+	user.mutex.Unlock()
+}
+
+func (user *User) GetUserStatus() int {
+	defer user.mutex.RUnlock()
+	user.mutex.RLock()
+	return user.status
 }

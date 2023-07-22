@@ -113,7 +113,6 @@ func (game *Game) Run(gameSignal chan struct{}) {
 		Score:     score,
 	}
 	game.Broadcast(gameOver)
-
 	gameSignal <- struct{}{}
 	for i := 0; i < len(game.Players); i += 1 {
 		if !game.Players[i].isRobot {
@@ -121,7 +120,7 @@ func (game *Game) Run(gameSignal chan struct{}) {
 		}
 	}
 
-	timer := time.NewTimer(5 * time.Second)
+	timer := time.NewTimer(3 * time.Second) //wait for game over score board
 	<-timer.C
 	game.Broadcast(&CmdOutBackToRoom{})
 

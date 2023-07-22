@@ -98,11 +98,11 @@ func (room *Room) listenSignal() {
 
 	room.mutex.Lock()
 	room.gameStart = false
-	room.mutex.Unlock()
 	for user := range room.users {
 		user.SetStatus(UserInRoom)
 	}
-	<-room.roomManagerSignal
+	room.mutex.Unlock()
+	room.roomManagerSignal <- struct{}{}
 }
 
 func (room *Room) JoinRoom(user *User) bool {

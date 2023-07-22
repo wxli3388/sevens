@@ -116,3 +116,12 @@ func (roomManager *RoomManager) getAllRoomInfo() []*RoomInfo {
 	}
 	return arr
 }
+
+// create room, let robot auto play
+func (roomManager *RoomManager) testing() {
+	for i := 0; i < 100; i += 1 {
+		r := roomManager.createRoom("")
+		r.StartGame()
+	}
+	roomManager.UpdateRoomInfo()
+}
