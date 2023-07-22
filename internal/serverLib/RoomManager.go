@@ -87,10 +87,12 @@ func (roomManager *RoomManager) leaveRoom(user *User) bool {
 	roomManager.mutex.Lock()
 	defer roomManager.mutex.Unlock()
 	if room, ok := roomManager.userMap[user]; ok {
-		room.LeaveRoom(user)
-		user.SetStatus(UserFree)
-		delete(roomManager.userMap, user)
-		return true
+		if room.LeaveRoom(user) {
+			user.SetStatus(UserFree)
+			delete(roomManager.userMap, user)
+			return true
+		}
+		return false
 	}
 	return false
 }

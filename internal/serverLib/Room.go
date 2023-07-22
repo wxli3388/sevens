@@ -99,6 +99,9 @@ func (room *Room) listenSignal() {
 	room.mutex.Lock()
 	room.gameStart = false
 	room.mutex.Unlock()
+	for user := range room.users {
+		user.SetStatus(UserInRoom)
+	}
 	<-room.roomManagerSignal
 }
 
@@ -111,10 +114,7 @@ func (room *Room) JoinRoom(user *User) bool {
 	}
 	room.users[user] = true
 	user.SetStatus(UserInRoom)
-	// hack for game start
-	// if true {
-	// 	room.StartGame()
-	// }
+
 	return true
 }
 

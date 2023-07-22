@@ -91,30 +91,38 @@ func (game *Game) Run(gameSignal chan struct{}) {
 			}
 
 		case <-game.finish:
-			coverCard := []string{}
-			score := []int{}
-
-			for i := 0; i < game.maxPlayer; i += 1 {
-				card := strings.Join(game.Players[i].Card.Cover, "")
-				coverCard = append(coverCard, card)
-				cnt := 0
-				for j := 0; j < len(game.Players[i].Card.Cover); j += 1 {
-					cnt += game.CardToScore(string(game.Players[i].Card.Cover[j][1]))
-				}
-				score = append(score, cnt)
-			}
-			gameOver := &CmdOutGameOver{
-				CoverCard: coverCard,
-				Score:     score,
-			}
-			game.Broadcast(gameOver)
 			run = false
 			break
 		}
 	}
-	timer := time.NewTimer(3 * time.Second)
-	<-timer.C
+
+	coverCard := []string{}
+	score := []int{}
+
+	for i := 0; i < game.maxPlayer; i += 1 {
+		card := strings.Join(game.Players[i].Card.Cover, "")
+		coverCard = append(coverCard, card)
+		cnt := 0
+		for j := 0; j < len(game.Players[i].Card.Cover); j += 1 {
+			cnt += game.CardToScore(string(game.Players[i].Card.Cover[j][1]))
+		}
+		score = append(score, cnt)
+	}
+	gameOver := &CmdOutGameOver{
+		CoverCard: coverCard,
+		Score:     score,
+	}
+	game.Broadcast(gameOver)
+
 	gameSignal <- struct{}{}
+	for i := 0; i < len(game.Players); i += 1 {
+		if !game.Players[i].isRobot {
+			game.Players[i].endGame <- struct{}{}
+		}
+	}
+
+	timer := time.NewTimer(5 * time.Second)
+	<-timer.C
 	game.Broadcast(&CmdOutBackToRoom{})
 
 }

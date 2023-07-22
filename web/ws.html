@@ -25,10 +25,10 @@
 
             <div>
                 Message: <input type="text" v-model="message">
-                <button @click="sendMessage">Send</button>
+                <button @click="sendMessage()">Send</button>
             </div>
             <div class="container" style="padding-top: 10px;">
-                <div v-if="status===1" class="row">
+                <div v-show="status===1" class="row">
                     <div v-for="room in data.roomInfo" class="col-3 room-card">
                         <h5 class="card-title">{{room.roomId}}</h5>
                         <h5 class="card-title">{{room.roomName}}</h5>
@@ -40,22 +40,22 @@
                         
                     </div>
                 </div>
-                <div v-else-if="status===2">
+                <div v-show="status===2">
                     <div class="row">
                         <div class="col-12">
-                            <div>黑桃</div>
+                            <div>Spade</div>
                             <img v-for="card of data.deskCard[4]" :src="getImage('4'+card)" style="width:80px">
                         </div>
                         <div class="col-12">
-                            <div>紅心</div>
+                            <div>Heart</div>
                             <img v-for="card of data.deskCard[3]" :src="getImage('3'+card)" style="width:80px">
                         </div>
                         <div class="col-12">
-                            <div>方塊</div>
+                            <div>Diamond</div>
                             <img v-for="card of data.deskCard[2]" :src="getImage('2'+card)" style="width:80px">
                         </div>
                         <div class="col-12">
-                            <div>梅花</div>
+                            <div>Club</div>
                             <img v-for="card of data.deskCard[1]" :src="getImage('1'+card)" style="width:80px">
                         </div>
                     </div>
@@ -73,11 +73,11 @@
                         </div>
                     </div>
                 </div>
-                <div v-else-if="status===3" class="row">
+                <div v-show="status===3" class="row">
                     <div class="col-12">
-                        <div v-for="(item, index) in gameOver.score">
-                            <img v-for="card in gameOver.coverCard[index]" :src="getImage(card)" style="width:80px">
-                            <h3>{{gameOver.score[index]}}</h3>
+                        <div v-for="(item, index) in data.gameOver.score">
+                            <img v-for="card in data.gameOver.coverCard[index]" :src="getImage(card)" style="width:80px">
+                            <h3>{{data.gameOver.score[index]}}</h3>
                             <h3>------------------------------------------------------------------------------</h3>
                         </div>
                     </div>
@@ -112,7 +112,10 @@
                 },
                 cardHint: {},
                 yourTurn: false,
-                gameOver: {},
+                gameOver: {
+                    score: [],
+                    coverCard: [],
+                },
             },
             pingTimer: null,
             cardMapImge: {"11": "1C", "12": "2C", "13": "3C", "14": "4C", "15": "5C", "16": "6C", "17": "7C", "18": "8C", "19": "9C", "21": "1D", "22": "2D", "23": "3D", "24": "4D", "25": "5D", "26": "6D", "27": "7D", "28": "8D", "29": "9D", "31": "1H", "32": "2H", "33": "3H", "34": "4H", "35": "5H", "36": "6H", "37": "7H", "38": "8H", "39": "9H", "41": "1S", "42": "2S", "43": "3S", "44": "4S", "45": "5S", "46": "6S", "47": "7S", "48": "8S", "49": "9S", "1A": "TC", "2A": "TD", "3A": "TH", "4A": "TS", "1B": "JC", "2B": "JD", "3B": "JH", "4B": "JS", "1C": "QC", "2C": "QD", "3C": "QH", "4C": "QS", "1D": "KC", "2D": "KD", "3D": "KH", "4D": "KS"},
@@ -156,6 +159,7 @@
                             self.status = 1
                             break
                         case 'gameStart':
+                            self.clearDesk()
                             self.status = 2
                             break
                         case 'cardInfo':
@@ -206,7 +210,7 @@
                                     gameOver.coverCard.push(arr)
                                 }
                             }
-                            self.gameOver = gameOver
+                            self.data.gameOver = gameOver
                             break
                         case 'backToRoom':
                             self.status = 1
@@ -258,6 +262,19 @@
         },
         isCoverCard() {
             return Object.keys(this.data.cardHint).length===0
+        },
+        clearDesk() {
+            this.data.deskCard = {
+                1: "",
+                2: "",
+                3: "",
+                4: "",
+            }
+            this.data.gameOver = {
+                score: [],
+                coverCard: [],
+            }
+            this.data.deskCard = []
         }
     },
   }).mount('#app')

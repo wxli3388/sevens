@@ -121,9 +121,7 @@ func (user *User) HandleRead() {
 			room := user.server.roomManager.getUserRoom(user)
 			room.StartGame()
 		default:
-
 		}
-
 	}
 }
 
