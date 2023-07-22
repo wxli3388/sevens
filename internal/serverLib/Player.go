@@ -35,8 +35,8 @@ func NewPlayer(user *User) *Player {
 }
 
 const (
-	RobotAutoPlay = 20    //ms
-	HumanAutoPlay = 20000 //ms
+	RobotAutoPlay = 20   //ms
+	HumanAutoPlay = 5000 //ms
 )
 
 func (p *Player) ServeCmd() {
