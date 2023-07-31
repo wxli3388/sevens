@@ -16,7 +16,7 @@ go run cmd/main.go
 
 Open the html 
 ```
-sevens/web/ws
+web/ws
 ```
 
 
